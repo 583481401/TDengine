@@ -643,22 +643,22 @@ static int32_t tdFetchSubmitReqSuids(SSubmitReq *pMsg, STbUidStore *pStore) {
  * @param now
  * @return int32_t
  */
-int32_t smaDoRetention(SSma *pSma, int64_t now) {
-  int32_t code = TSDB_CODE_SUCCESS;
-  if (!VND_IS_RSMA(pSma->pVnode)) {
-    return code;
-  }
+// int32_t smaDoRetention(SSma *pSma, int64_t now) {
+//   int32_t code = TSDB_CODE_SUCCESS;
+//   if (!VND_IS_RSMA(pSma->pVnode)) {
+//     return code;
+//   }
 
-  for (int32_t i = 0; i < TSDB_RETENTION_L2; ++i) {
-    if (pSma->pRSmaTsdb[i]) {
-      code = tsdbDoRetention(pSma->pRSmaTsdb[i], now);
-      if (code) goto _end;
-    }
-  }
+//   for (int32_t i = 0; i < TSDB_RETENTION_L2; ++i) {
+//     if (pSma->pRSmaTsdb[i]) {
+//       code = tsdbDoRetention(pSma->pRSmaTsdb[i], now);
+//       if (code) goto _end;
+//     }
+//   }
 
-_end:
-  return code;
-}
+// _end:
+//   return code;
+// }
 
 static void tdBlockDataDestroy(SArray *pBlockArr) {
   for (int32_t i = 0; i < taosArrayGetSize(pBlockArr); ++i) {
@@ -684,7 +684,7 @@ static int32_t tdRSmaExecAndSubmitResult(SSma *pSma, qTaskInfo_t taskInfo, SRSma
         break;
       } else {
         smaError("vgId:%d, qExecTask for rsma table %" PRIi64 " level %" PRIi8 " failed since %s", SMA_VID(pSma), suid,
-                 pItem->level, terrstr(code));
+                 pItem->level, terrstr());
         goto _err;
       }
     }
@@ -708,8 +708,8 @@ static int32_t tdRSmaExecAndSubmitResult(SSma *pSma, qTaskInfo_t taskInfo, SRSma
 #endif
     for (int32_t i = 0; i < taosArrayGetSize(pResList); ++i) {
       SSDataBlock *output = taosArrayGetP(pResList, i);
-      smaDebug("result block, uid:%" PRIu64 ", groupid:%" PRIu64 ", rows:%d", output->info.id.uid, output->info.id.groupId,
-               output->info.rows);
+      smaDebug("result block, uid:%" PRIu64 ", groupid:%" PRIu64 ", rows:%d", output->info.id.uid,
+               output->info.id.groupId, output->info.rows);
 
       STsdb      *sinkTsdb = (pItem->level == TSDB_RETENTION_L1 ? pSma->pRSmaTsdb[0] : pSma->pRSmaTsdb[1]);
       SSubmitReq *pReq = NULL;
