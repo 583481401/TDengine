@@ -591,17 +591,38 @@ void qCleanExecTaskBlockBuf(qTaskInfo_t tinfo) {
   taosArrayClear(pTaskInfo->pResultBlockList);
 }
 
+int32_t getThread(void* pTkInfo) {
+  SExecTaskInfo* pTaskInfo = (SExecTaskInfo*)pTkInfo;
+  int64_t        threadId = taosGetSelfPthreadId();
+  int64_t curOwner = 0;
+  while (1) {
+    curOwner = atomic_val_compare_exchange_64(&pTaskInfo->owner, 0, threadId);
+    if (curOwner == 0 || curOwner == threadId) {
+      break;
+    }
+    qError("%s-%p aaa execTask is now executed by thread:%p", GET_TASKID(pTaskInfo), pTaskInfo, (void*)curOwner);
+  }
+  return TSDB_CODE_SUCCESS;
+}
+
+void releaseThread(void* pTkInfo) {
+  SExecTaskInfo* pTaskInfo = (SExecTaskInfo*)pTkInfo;
+  atomic_store_64(&pTaskInfo->owner, 0);
+}
+
 int32_t qExecTask(qTaskInfo_t tinfo, SSDataBlock** pRes, uint64_t* useconds) {
   SExecTaskInfo* pTaskInfo = (SExecTaskInfo*)tinfo;
   int64_t        threadId = taosGetSelfPthreadId();
 
   *pRes = NULL;
-  int64_t curOwner = 0;
-  if ((curOwner = atomic_val_compare_exchange_64(&pTaskInfo->owner, 0, threadId)) != 0) {
+#if 0
+  int64_t curOwner = atomic_val_compare_exchange_64(&pTaskInfo->owner, 0, threadId);
+  if (curOwner != 0 && curOwner != threadId) {
     qError("%s-%p execTask is now executed by thread:%p", GET_TASKID(pTaskInfo), pTaskInfo, (void*)curOwner);
     pTaskInfo->code = TSDB_CODE_QRY_IN_EXEC;
     return pTaskInfo->code;
   }
+#endif
 
   if (pTaskInfo->cost.start == 0) {
     pTaskInfo->cost.start = taosGetTimestampUs();
@@ -643,7 +664,7 @@ int32_t qExecTask(qTaskInfo_t tinfo, SSDataBlock** pRes, uint64_t* useconds) {
   qDebug("%s task suspended, %d rows returned, total:%" PRId64 " rows, in sinkNode:%d, elapsed:%.2f ms",
          GET_TASKID(pTaskInfo), current, total, 0, el / 1000.0);
 
-  atomic_store_64(&pTaskInfo->owner, 0);
+  // atomic_store_64(&pTaskInfo->owner, 0);
   return pTaskInfo->code;
 }
 

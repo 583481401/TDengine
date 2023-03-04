@@ -220,6 +220,9 @@ int32_t qStreamRestoreParam(qTaskInfo_t tinfo);
 bool    qStreamRecoverScanFinished(qTaskInfo_t tinfo);
 void    qStreamCloseTsdbReader(void* task);
 
+int32_t getThread(void* pTkInfo);
+void releaseThread(void* pTkInfo);
+
 #ifdef __cplusplus
 }
 #endif

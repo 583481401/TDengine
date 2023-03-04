@@ -22,6 +22,7 @@ static int32_t streamTaskExecImpl(SStreamTask* pTask, const void* data, SArray* 
   void*   exec = pTask->exec.executor;
 
   // set input
+  getThread(exec);
   const SStreamQueueItem* pItem = (const SStreamQueueItem*)data;
   if (pItem->type == STREAM_INPUT__GET_RES) {
     const SStreamTrigger* pTrigger = (const SStreamTrigger*)data;
@@ -76,6 +77,7 @@ static int32_t streamTaskExecImpl(SStreamTask* pTask, const void* data, SArray* 
         qDebug("task %d(child %d) processed retrieve, reqId %" PRId64, pTask->taskId, pTask->selfChildId,
                pRetrieveBlock->reqId);
       }
+      releaseThread(exec);
       break;
     }
 
@@ -120,8 +122,10 @@ int32_t streamScanExec(SStreamTask* pTask, int32_t batchSz) {
 
       SSDataBlock* output = NULL;
       uint64_t     ts = 0;
+      getThread(exec);
       if (qExecTask(exec, &output, &ts) < 0) {
         taosArrayDestroy(pRes);
+        releaseThread(exec);
         return -1;
       }
       if (output == NULL) {
@@ -130,6 +134,7 @@ int32_t streamScanExec(SStreamTask* pTask, int32_t batchSz) {
         } else {
           qSetStreamOpOpen(exec);
         }
+        releaseThread(exec);
         break;
       }
 
